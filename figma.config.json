@@ -1,0 +1,8 @@
+{
+  "codeConnect": {
+    "figmaFileUrl": "https://www.figma.com/design/ejRYKClcVaPpz3q4h2XNZa/Obra-shadcn-ui-kit-community-edition--1.6.0---Community-",
+    "include": [
+      "src/components/ui/**/*.tsx"
+    ]
+  }
+}
