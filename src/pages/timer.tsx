@@ -1,15 +1,8 @@
 import { useState } from "react"
-import { Play, Plus } from "lucide-react"
+import { Play, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { TaskCard, type Task } from "@/components/TaskCard"
 
 const INITIAL_TASKS: Task[] = [
@@ -19,18 +12,18 @@ const INITIAL_TASKS: Task[] = [
 
 export default function TimerPage() {
   const [time, setTime] = useState("25")
-  const [selectedTask, setSelectedTask] = useState("")
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS)
   const [newTaskId, setNewTaskId] = useState<string | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
 
-  const pendingTasks = tasks.filter((t) => !t.done)
+  const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null
 
   function toggleTask(id: string) {
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t
-        // If we're checking off the currently selected task, clear the selection
-        if (!t.done && selectedTask === id) setSelectedTask("")
+        if (!t.done && selectedTaskId === id) setSelectedTaskId(null)
         return { ...t, done: !t.done }
       })
     )
@@ -42,7 +35,7 @@ export default function TimerPage() {
   }
 
   function deleteTask(id: string) {
-    if (selectedTask === id) setSelectedTask("")
+    if (selectedTaskId === id) setSelectedTaskId(null)
     setTasks((prev) => prev.filter((t) => t.id !== id))
   }
 
@@ -54,6 +47,13 @@ export default function TimerPage() {
     }
     setTasks((prev) => [...prev, newTask])
     setNewTaskId(newTask.id)
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragOver(false)
+    const id = e.dataTransfer.getData("taskId")
+    if (id) setSelectedTaskId(id)
   }
 
   return (
@@ -83,29 +83,30 @@ export default function TimerPage() {
             </div>
           </div>
 
-          {/* Task field */}
-          <div className="flex items-center gap-4">
-            <Label className="text-[var(--foreground)] text-base font-normal w-10 shrink-0">
-              Task
-            </Label>
-            <Select value={selectedTask} onValueChange={setSelectedTask}>
-              <SelectTrigger className="flex-1 bg-[var(--input)] border-[var(--border)] text-[var(--foreground)]">
-                <SelectValue placeholder="Select a task" />
-              </SelectTrigger>
-              <SelectContent>
-                {pendingTasks.length === 0 ? (
-                  <SelectItem value="__empty" disabled>
-                    No pending tasks
-                  </SelectItem>
-                ) : (
-                  pendingTasks.map((task) => (
-                    <SelectItem key={task.id} value={task.id}>
-                      {task.label}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+          {/* Task drop zone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={handleDrop}
+            className={`flex items-center gap-2 px-3 py-2 rounded-[var(--rounded-lg,8px)] border text-sm transition-colors ${selectedTask ? "justify-between" : "justify-center"}
+              ${isDragOver
+                ? "border-[var(--ring)] bg-[var(--accent)] text-[var(--accent-foreground)]"
+                : selectedTask
+                  ? "border-[var(--border)] bg-[var(--input)] text-[var(--foreground)]"
+                  : "border-dashed border-[var(--border)] bg-transparent text-[var(--muted-foreground)]"
+              }`}
+          >
+            <span className="truncate leading-6">
+              {selectedTask ? selectedTask.label : "Drag a task here"}
+            </span>
+            {selectedTask && (
+              <button
+                onClick={() => setSelectedTaskId(null)}
+                className="shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Start button */}
@@ -130,6 +131,8 @@ export default function TimerPage() {
                 onDelete={deleteTask}
                 onRename={renameTask}
                 autoEdit={task.id === newTaskId}
+                draggable={!task.done}
+                selected={task.id === selectedTaskId}
               />
             ))}
           </div>
