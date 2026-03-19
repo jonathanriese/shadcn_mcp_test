@@ -15,9 +15,11 @@ interface TaskCardProps {
   onDelete: (id: string) => void
   onRename: (id: string, label: string) => void
   autoEdit?: boolean
+  draggable?: boolean
+  selected?: boolean
 }
 
-export function TaskCard({ task, onToggle, onDelete, onRename, autoEdit = false }: TaskCardProps) {
+export function TaskCard({ task, onToggle, onDelete, onRename, autoEdit = false, draggable: isDraggable = false, selected = false }: TaskCardProps) {
   const [editing, setEditing] = useState(autoEdit)
   const [draft, setDraft] = useState(task.label)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -59,7 +61,12 @@ export function TaskCard({ task, onToggle, onDelete, onRename, autoEdit = false 
   }
 
   return (
-    <div onClick={handleClick} className="flex items-center gap-3 px-3 py-2 rounded-[var(--radius)] bg-[var(--card)] border border-[var(--border)] w-full cursor-pointer transition-colors hover:bg-[var(--accent)]">
+    <div
+      onClick={handleClick}
+      draggable={isDraggable && !editing}
+      onDragStart={isDraggable ? (e) => e.dataTransfer.setData("taskId", task.id) : undefined}
+      className={`flex items-center gap-3 px-3 py-2 rounded-[var(--radius)] border w-full cursor-pointer transition-colors hover:bg-[var(--accent)] ${selected ? "bg-[var(--card)] border-[var(--destructive)]" : "bg-[var(--card)] border-[var(--border)]"}`}
+    >
       <div className="shrink-0">
         <Checkbox
           checked={task.done}
