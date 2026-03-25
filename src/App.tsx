@@ -28,7 +28,7 @@ export default function App() {
     document.documentElement.classList.toggle("dark", dark)
   }, [dark])
 
-  if (hash === "#/timer") {
+  if (hash === "" || hash === "#/" || hash === "#/timer") {
     return <TimerPage />
   }
 
@@ -38,7 +38,7 @@ export default function App() {
         <div className="flex items-center justify-between py-2">
           <h1 className="text-3xl font-bold">shadcn/ui Component Gallery</h1>
           <div className="flex items-center gap-3">
-            <a href="#/timer">
+            <a href="#/">
               <Button variant="outline" size="sm">
                 <Timer className="h-4 w-4" />
                 Timer
