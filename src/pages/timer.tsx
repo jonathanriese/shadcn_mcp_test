@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Play, Pause, Plus, RotateCcw, X, ChevronsRight, EllipsisVertical } from "lucide-react"
+import { Play, Pause, Plus, RotateCcw, X, ChevronsRight, EllipsisVertical, Check, Coffee } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/accordion"
 import { TaskCard, type Task } from "@/components/TaskCard"
 
-type TimerState = "idle" | "running" | "paused"
+type TimerState = "idle" | "running" | "paused" | "done"
 
 const INITIAL_TASKS: Task[] = [
   { id: "1", label: "Test", done: false },
@@ -41,6 +41,7 @@ export default function TimerPage() {
   const [timerState, setTimerState] = useState<TimerState>("idle")
   const [remainingSeconds, setRemainingSeconds] = useState(0)
   const [initialSeconds, setInitialSeconds] = useState(0)
+  const [isBreak, setIsBreak] = useState(false)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [defaultTime, setDefaultTime] = useState("25")
@@ -52,17 +53,47 @@ export default function TimerPage() {
     if (timerState !== "running") return
     const id = setInterval(() => {
       setRemainingSeconds((prev) => {
-        if (prev <= 1) { setTimerState("idle"); return 0 }
+        if (prev <= 1) { setTimerState("done"); return 0 }
         return prev - 1
       })
     }, 1000)
     return () => clearInterval(id)
   }, [timerState])
 
+  // Play a soft chime when the timer finishes
+  useEffect(() => {
+    if (timerState !== "done") return
+    const ctx = new AudioContext()
+    const frequencies = [880, 1109, 1320]
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = "sine"
+      osc.frequency.value = freq
+      const t = ctx.currentTime + i * 0.18
+      gain.gain.setValueAtTime(0, t)
+      gain.gain.linearRampToValueAtTime(0.35, t + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9)
+      osc.start(t)
+      osc.stop(t + 0.9)
+    })
+    return () => ctx.close()
+  }, [timerState])
+
   function startTimer() {
     const secs = Math.max(1, parseInt(time) || 1) * 60
     setInitialSeconds(secs)
     setRemainingSeconds(secs)
+    setIsBreak(false)
+    setTimerState("running")
+  }
+
+  function startBreak() {
+    setInitialSeconds(300)
+    setRemainingSeconds(300)
+    setIsBreak(true)
     setTimerState("running")
   }
 
@@ -101,10 +132,15 @@ export default function TimerPage() {
 
   const sortedTasks = [...tasks].sort((a, b) => Number(a.done) - Number(b.done))
 
-  // Header label changes with timer state
+  // Header changes with timer state
+  const HeaderIcon = timerState === "done" ? Check : ChevronsRight
   const headerLabel = timerState === "idle"
     ? "Set timer"
-    : (selectedTask?.label ?? "No task selected")
+    : timerState === "done"
+      ? "Done"
+      : isBreak
+        ? "☕ Break time"
+        : (selectedTask?.label ?? "No task selected")
 
   return (
     <div className="min-h-screen bg-neutral-950 flex items-start justify-center p-8">
@@ -113,7 +149,7 @@ export default function TimerPage() {
         {/* ── HEADER ── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[var(--muted-foreground)]">
-            <ChevronsRight className="h-5 w-5 shrink-0" />
+            <HeaderIcon className="h-5 w-5 shrink-0" />
             <span className="text-base leading-6 truncate">{headerLabel}</span>
           </div>
 
@@ -186,10 +222,32 @@ export default function TimerPage() {
           </div>
         )}
 
-        {/* ── RUNNING / PAUSED VIEW ── */}
-        {timerState !== "idle" && (
+        {/* ── DONE / BREAK PROMPT VIEW ── */}
+        {timerState === "done" && (
           <div className="flex flex-col gap-4">
             <p className="text-[64px] leading-none text-[var(--foreground)] font-normal tracking-[0px]">
+              Take a break?
+            </p>
+            <div className="flex items-center gap-2">
+              <Button onClick={startBreak}>
+                <Coffee className="h-4 w-4" />
+                Start break
+              </Button>
+              <Button variant="secondary" onClick={() => setTimerState("idle")}>
+                Skip
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── RUNNING / PAUSED VIEW ── */}
+        {(timerState === "running" || timerState === "paused") && (
+          <div className="flex flex-col gap-4">
+            <p className={`text-[64px] leading-none font-normal tracking-[0px] transition-colors duration-300 ${
+              timerState === "running" && remainingSeconds <= 5
+                ? "text-[var(--destructive)]"
+                : "text-[var(--foreground)]"
+            }`}>
               {formatTime(remainingSeconds)}
             </p>
             <div className="flex items-center gap-2">
@@ -215,7 +273,7 @@ export default function TimerPage() {
         )}
 
         {/* ── TASK LIST ── */}
-        <div className="flex flex-col gap-4 mt-2">
+        {!isBreak && <div className="flex flex-col gap-4 mt-2">
           <p className="text-[var(--foreground)] text-base font-normal leading-6">
             My tasks for today
           </p>
@@ -237,7 +295,7 @@ export default function TimerPage() {
             <Plus className="h-4 w-4" />
             Add task
           </Button>
-        </div>
+        </div>}
 
       </div>
 
