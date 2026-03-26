@@ -327,7 +327,7 @@ export default function TimerPage() {
 
       {/* ── SETTINGS DIALOG ── */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="sm:max-w-sm min-h-[320px] flex flex-col justify-start">
+        <DialogContent className="sm:max-w-sm min-h-[320px] flex flex-col justify-start top-8 translate-y-0">
           <DialogHeader>
             <DialogTitle>Settings</DialogTitle>
           </DialogHeader>
