@@ -60,6 +60,14 @@ export default function TimerPage() {
     return () => clearInterval(id)
   }, [timerState])
 
+  // After a break ends, skip the "Take a break?" prompt and go straight to idle
+  useEffect(() => {
+    if (timerState === "done" && isBreak) {
+      setTimerState("idle")
+      setIsBreak(false)
+    }
+  }, [timerState, isBreak])
+
   // Play a soft chime when the timer finishes
   useEffect(() => {
     if (timerState !== "done") return
