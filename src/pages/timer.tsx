@@ -60,15 +60,31 @@ export default function TimerPage() {
     return () => clearInterval(id)
   }, [timerState])
 
-  // After a break ends, skip the "Take a break?" prompt and go straight to idle
+  // After a break ends, play a chime and return to idle
   useEffect(() => {
-    if (timerState === "done" && isBreak) {
-      setTimerState("idle")
-      setIsBreak(false)
-    }
+    if (timerState !== "done" || !isBreak) return
+    const ctx = new AudioContext()
+    const frequencies = [880, 1109, 1320]
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = "sine"
+      osc.frequency.value = freq
+      const t = ctx.currentTime + i * 0.18
+      gain.gain.setValueAtTime(0, t)
+      gain.gain.linearRampToValueAtTime(0.35, t + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9)
+      osc.start(t)
+      osc.stop(t + 0.9)
+    })
+    setTimeout(() => ctx.close(), 2000)
+    setTimerState("idle")
+    setIsBreak(false)
   }, [timerState, isBreak])
 
-  // Play a soft chime when the timer finishes
+  // Play a soft chime when the (non-break) timer finishes
   useEffect(() => {
     if (timerState !== "done") return
     const ctx = new AudioContext()
