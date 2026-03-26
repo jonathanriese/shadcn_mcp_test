@@ -45,6 +45,7 @@ export default function TimerPage() {
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [defaultTime, setDefaultTime] = useState("25")
+  const [defaultBreakTime, setDefaultBreakTime] = useState("5")
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null
 
@@ -115,8 +116,9 @@ export default function TimerPage() {
   }
 
   function startBreak() {
-    setInitialSeconds(300)
-    setRemainingSeconds(300)
+    const secs = Math.max(1, parseInt(defaultBreakTime) || 5) * 60
+    setInitialSeconds(secs)
+    setRemainingSeconds(secs)
     setIsBreak(true)
     setTimerState("running")
   }
@@ -342,6 +344,25 @@ export default function TimerPage() {
                   max={120}
                   value={defaultTime}
                   onChange={(e) => { setDefaultTime(e.target.value); setTime(e.target.value) }}
+                  className="pr-20"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--muted-foreground)] pointer-events-none">
+                  minutes
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <Label htmlFor="break-time" className="w-28 shrink-0">
+                Break time
+              </Label>
+              <div className="relative flex-1">
+                <Input
+                  id="break-time"
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={defaultBreakTime}
+                  onChange={(e) => setDefaultBreakTime(e.target.value)}
                   className="pr-20"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--muted-foreground)] pointer-events-none">
